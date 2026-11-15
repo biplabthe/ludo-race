@@ -7,8 +7,14 @@
 <meta name="description" content="Ludo Race — Ludo and Snakes & Ladders for 2-4 players: vs computer, pass & play, or online with friends.">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1a1466">
-<link rel="icon" href="/icons/icon-192.png">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<meta property="og:title" content="Ludo Race">
+<meta property="og:description" content="Ludo and Snakes & Ladders — play with friends online, vs computer, or pass & play.">
+<meta property="og:image" content="https://ludo-race-28498.web.app/icons/icon-512.png">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -33,6 +39,11 @@ button{cursor:pointer}
 .bar{width:min(300px,70%);height:14px;border-radius:10px;background:rgba(0,0,0,.35);border:2px solid var(--line);overflow:hidden}
 .bar i{display:block;height:100%;width:0;border-radius:10px;background:linear-gradient(#ffe27a,#f5a300);animation:load 1.3s ease-out forwards}
 @keyframes load{to{width:100%}}
+#splash .splogo{width:min(420px,90%)}
+#splash .splogo img{border-radius:36px;animation:pop .7s cubic-bezier(.2,1.4,.4,1) both,halo 2s ease-in-out .7s infinite}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes halo{50%{box-shadow:0 0 0 4px rgba(255,207,63,.8),0 0 50px rgba(77,155,255,.75)}}
+.wel{margin:0;font-size:clamp(24px,7vw,34px);font-weight:800;text-align:center;line-height:1.1;background:linear-gradient(#fff3a0,#ffb300);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #7a3b00)}
 .logo{width:min(360px,88%);margin:0 auto}
 .logo img{width:100%;height:auto;display:block;border-radius:28px;box-shadow:0 0 0 3px rgba(255,207,63,.55),0 14px 30px rgba(0,0,0,.5)}
 #homeScr .logo.hl{width:min(240px,58%)}
@@ -201,7 +212,7 @@ select option{color:#111}
 .toast .row2>*{flex:1}
 .toast .big{margin:0;min-height:46px;font-size:17px}
 @media(max-width:400px){.tile{min-height:116px}.tile svg{width:52px;height:52px}.tile b{font-size:16px}.ribbon{font-size:18px;padding:4px 18px}.avs{grid-template-columns:repeat(5,minmax(0,1fr))}.prow{grid-template-columns:24px minmax(0,1fr) 104px}}
-@media(prefers-reduced-motion:reduce){.dice.ready,.day.today,.bar i{animation:none}.bar i{width:100%}}
+@media(prefers-reduced-motion:reduce){.dice.ready,.day.today,.bar i,#splash .splogo img{animation:none}.bar i{width:100%}}
 </style>
 </head>
 <body>
@@ -230,7 +241,8 @@ select option{color:#111}
 </svg>
 
 <section id="splash" class="scr">
-  <div class="logo"><img src="img/logo.jpg" alt="Ludo Race" width="720" height="720"></div>
+  <div class="logo splogo"><img src="img/logo.jpg" alt="Ludo Race" width="720" height="720"></div>
+  <p class="wel" id="welTx">Welcome to Ludo Race</p>
   <div class="bar"><i></i></div>
 </section>
 
@@ -973,10 +985,10 @@ window.addEventListener('popstate',()=>{});
 
 /* ---------- Boot ---------- */
 muted=store.get('lr_mute',false);setMute(muted);
-showDice(6);applyLang();requestAnimationFrame(loop);
+showDice(6);applyLang();$('#welTx').textContent=lang==='hi'?'Ludo Race में आपका स्वागत है':'Welcome to Ludo Race';requestAnimationFrame(loop);
 setTimeout(()=>{showScr('#homeScr');homeUI();
  const rc=new URLSearchParams(location.search).get('room');
- if(rc)openOnline();else if(bonusState().can)openDaily()},1400);
+ if(rc)openOnline();else if(bonusState().can)openDaily()},2200);
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
 </script>

@@ -1,13 +1,13 @@
 {
-  "name": "Ludo & Snakes — लूडो और साँप-सीढ़ी",
-  "short_name": "Ludo & Snakes",
-  "description": "Ludo and Snakes & Ladders for 2-4 players — vs computer, one device or online",
+  "name": "Ludo Race",
+  "short_name": "Ludo Race",
+  "description": "Ludo Race — Ludo and Snakes & Ladders: vs computer, pass & play, or online with friends",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a1f1a",
-  "theme_color": "#1e9e4a",
+  "background_color": "#120c4a",
+  "theme_color": "#1a1466",
   "lang": "hi",
   "icons": [
     {

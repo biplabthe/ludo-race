@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>लूडो रेस</title>
+<meta name="description" content="4 खिलाड़ियों का लूडो — कंप्यूटर के साथ, साथ बैठकर या ऑनलाइन दोस्तों के साथ। क्लासिक और 2/10 मिनट रेस मोड।">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: playful family board game, bright and warm
+   IDEA: a real Ludo board resting on a felt table, framed in wood
+   PICTURE: the live board itself, top and large
+   COLOUR+TYPE: felt green ground, the four classic house colours, Baloo 2 (Devanagari-friendly)
+   LAYOUT: board left, dice + timer + standings right; stacks under 860px */
+:root{color-scheme:light dark;--bg:light-dark(#d9ebe2,#0a1f1a);--bg2:light-dark(#c4dfd2,#06140f);--ink:light-dark(#11241d,#eef6f2);--card:light-dark(#ffffff,#12302a);--mute:light-dark(#4c675d,#9dbbb0);--line:light-dark(#cfe0d8,#21443b);--soft:light-dark(#f1f6f3,#0e2722)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:radial-gradient(ellipse at 30% 20%,var(--bg),var(--bg2));min-height:100vh;color:var(--ink);font:16px/1.5 "Baloo 2",system-ui,sans-serif;overflow-x:clip}
+button,input,select{font:inherit;color:inherit}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:1120px;margin:0 auto;padding:16px max(3vw,14px) 4px}
+h1{margin:0;font-size:clamp(28px,4vw,40px);line-height:1.05;font-weight:800}
+h1 span{font-size:16px;font-weight:600;color:var(--mute);margin-left:8px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.btn{min-height:44px;padding:6px 16px;border-radius:12px;border:2px solid var(--line);background:var(--card);cursor:pointer;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{border-color:var(--mute)}
+.btn.sm{min-height:36px;padding:2px 12px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:3px solid #f4b400;outline-offset:2px}
+.game{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:24px;max-width:1120px;margin:0 auto;padding:12px max(3vw,14px) 32px;align-items:start}
+.frame{padding:clamp(8px,1.6vw,16px);border-radius:20px;background:linear-gradient(145deg,#c98a45,#8a4f1e 55%,#6b3a12);box-shadow:0 18px 40px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.25);max-width:min(100%,calc(100vh - 90px));min-width:280px;margin:0 auto;width:100%}
+.board{position:relative;aspect-ratio:1;width:100%;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+.board canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation;cursor:pointer}
+.panel{display:grid;gap:14px}
+.box{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.tl{font-size:14px;color:var(--mute);margin:0}
+.timer{font-size:44px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.timer.low{color:#e2332b;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.45}}
+.roomtag{float:right;font-weight:800;font-size:14px;background:var(--soft);border-radius:8px;padding:2px 8px}
+.turnbox{display:grid;justify-items:center;gap:10px;text-align:center}
+.turn{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px}
+.dot{width:16px;height:16px;border-radius:50%;flex:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+.av{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none;background:var(--line)}
+.dice{--pc:#e2332b;width:104px;height:104px;border-radius:22px;border:5px solid var(--pc);background:#fff;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:14px;gap:4px;cursor:pointer;box-shadow:0 8px 0 rgba(0,0,0,.18),0 12px 24px rgba(0,0,0,.2);transition:transform .1s}
+.dice:active{transform:translateY(3px)}
+.dice i{display:block;border-radius:50%;margin:3px}
+.dice i.on{background:#18211e;box-shadow:inset 0 2px 2px rgba(255,255,255,.3)}
+.dice.ready{animation:bob 1s ease-in-out infinite}
+.dice.roll{animation:shake .12s linear infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@keyframes shake{0%{transform:rotate(-12deg)}50%{transform:rotate(12deg) translateY(-4px)}100%{transform:rotate(-12deg)}}
+.msg{margin:0;min-height:48px;color:var(--mute);font-weight:600}
+.tt{margin:0;font-size:14px;font-weight:700;color:#c47f00;min-height:1.2em}
+.plist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.plist li{display:grid;grid-template-columns:22px auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:2px solid transparent}
+.plist li.cur{border-color:var(--line);background:color-mix(in srgb,var(--card) 80%,#f4b400)}
+.plist b{font-size:18px}
+.who{display:flex;align-items:center;gap:6px}
+.nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm small{font-weight:600;color:var(--mute)}
+.nm small.fin{color:#1e9e4a}
+.bar{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;border-radius:4px;transition:width .3s}
+.hc{font-weight:700;font-size:14px;white-space:nowrap}
+.rules{font-size:14px;color:var(--mute);margin:0}
+.modal{position:fixed;inset:0;background:rgba(5,20,15,.6);display:grid;place-items:center;padding:16px;z-index:5;overflow:auto}
+.hidden{display:none}
+.card{background:var(--card);border-radius:22px;padding:22px;width:min(560px,100%);box-shadow:0 30px 60px rgba(0,0,0,.4)}
+.card h2{margin:0 0 8px;font-size:32px;line-height:1.05}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:var(--soft);padding:5px;border-radius:14px}
+.tabs button{min-height:44px;border:0;border-radius:10px;background:transparent;font-weight:800;cursor:pointer;line-height:1.15}
+.tabs button.on{background:var(--card);box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.lbl{margin:14px 0 6px;font-weight:700}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.seg input{position:absolute;opacity:0}
+.seg span{display:block;min-height:44px;padding:8px 10px;border-radius:14px;border:2px solid var(--line);cursor:pointer;font-weight:800;line-height:1.2}
+.seg small{display:block;font-weight:500;color:var(--mute);font-size:13px;margin-top:2px}
+.seg input:checked+span{border-color:#1e9e4a;background:color-mix(in srgb,var(--card) 82%,#1e9e4a)}
+.seg input:focus-visible+span{outline:3px solid #f4b400}
+.prow{display:grid;grid-template-columns:28px minmax(0,1fr) 130px;gap:8px;align-items:center;margin-bottom:8px}
+.sw{width:28px;height:28px;border-radius:8px;flex:none}
+.inp,.prow input,.prow select{min-height:44px;padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--card);font-size:16px;width:100%}
+.inp.code{text-transform:uppercase;letter-spacing:2px;font-weight:800}
+.rule,.note{font-size:14px;color:var(--mute)}
+.err{color:#e2332b;font-weight:700;min-height:1.4em;margin:6px 0}
+.big{width:100%;min-height:54px;border:0;border-radius:14px;background:#1e9e4a;color:#fff;font-size:20px;font-weight:800;cursor:pointer;box-shadow:0 5px 0 #0f6a2f;margin-top:12px}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 #0f6a2f}
+.big:disabled{opacity:.5;cursor:not-allowed}
+.row2{display:flex;gap:8px;align-items:center}.row2>.inp{flex:1}
+.or{text-align:center;color:var(--mute);font-size:14px;margin:12px 0 6px}
+.login{display:grid;gap:8px;margin-top:12px}
+.fb{min-height:50px;border:0;border-radius:12px;background:#1877f2;color:#fff;font-weight:800;font-size:17px;cursor:pointer}
+.gg{min-height:50px;border-radius:12px;border:2px solid var(--line);background:#fff;color:#222;font-weight:800;font-size:17px;cursor:pointer}
+.me{display:flex;align-items:center;gap:10px;margin:12px 0;padding:8px 10px;border-radius:12px;background:var(--soft)}
+.me b{flex:1}
+.chk{display:flex;gap:8px;align-items:center;font-weight:600;margin-top:8px;min-height:44px}
+.chk input{width:22px;height:22px}
+.live{list-style:none;padding:0;margin:6px 0 0;display:grid;gap:6px;max-height:240px;overflow:auto}
+.live li{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px;background:var(--soft)}
+.live .nm{flex:1}
+.live .st{font-size:13px;color:var(--mute);white-space:nowrap}
+.gdot{width:10px;height:10px;border-radius:50%;background:#2ecc71;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,#2ecc71 30%,transparent)}
+.gdot.busy{background:#f4b400}
+.share{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.share .inp{flex:1 1 200px;font-size:14px}
+.wa{background:#25d366;color:#fff;border-color:#25d366}
+.seats{list-style:none;padding:0;margin:12px 0;display:grid;gap:8px}
+.seats li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--soft);min-height:48px}
+.seats small{color:var(--mute);font-weight:600}
+.mute{color:var(--mute)}
+.rlist{list-style:none;padding:0;margin:12px 0 18px;display:grid;gap:8px}
+.rlist li{display:grid;grid-template-columns:64px auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--soft)}
+.medal{font-weight:800;text-align:center;border-radius:10px;padding:2px 0;color:#1b1b1b}
+.m0{background:#ffd54a}.m1{background:#d5dbe0}.m2{background:#e3a26c}.m3{background:#c9d6d0}
+.st{font-size:14px;color:var(--mute);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;width:min(420px,calc(100% - 24px));background:var(--card);border-radius:18px;padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.45);border:3px solid #1e9e4a;display:grid;gap:10px}
+.toast .row2>*{flex:1}
+@media(max-width:860px){.game{grid-template-columns:minmax(0,1fr)}.frame{max-width:640px}}
+@media(max-width:520px){.seg{grid-template-columns:minmax(0,1fr)}.prow{grid-template-columns:28px minmax(0,1fr) 110px}.timer{font-size:36px}.rlist li{grid-template-columns:56px auto minmax(0,1fr)}.rlist .st{grid-column:3}.card{padding:16px}}
+@media(prefers-reduced-motion:reduce){.dice.ready,.timer.low{animation:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>लूडो <span>कंप्यूटर · साथ बैठकर · ऑनलाइन</span></h1>
+  <div class="tools"><button class="btn" id="snd">आवाज़: चालू</button><button class="btn" id="newg">नया गेम</button></div>
+</header>
+<main class="game">
+  <div class="frame"><div class="board" id="board"><canvas id="cv" aria-label="लूडो बोर्ड"></canvas></div></div>
+  <aside class="panel">
+    <div class="box"><span class="roomtag" id="roomtag" hidden></span><p class="tl" id="tlabel">खेल का समय</p><div class="timer" id="timer">00:00</div></div>
+    <div class="box turnbox">
+      <div class="turn" id="turn">गेम चुनें</div>
+      <button class="dice" id="dice" aria-label="पासा फेंकें"></button>
+      <p class="msg" id="msg">पासे पर क्लिक करें या Space दबाएँ</p>
+      <p class="tt" id="tt"></p>
+    </div>
+    <div class="box"><p class="tl" style="margin-bottom:8px">रैंकिंग (लाइव)</p><ol class="plist" id="plist"></ol></div>
+    <p class="rules">6 आने पर गोटी बाहर निकलती है · 6, किसी को काटने या घर पहुँचने पर दोबारा बारी · लगातार तीन 6 पर बारी जाती है · तारे वाले खाने सुरक्षित हैं</p>
+  </aside>
+</main>
+
+<div class="modal" id="home"><div class="card">
+  <h2>लूडो खेलें</h2>
+  <div class="tabs" role="tablist">
+    <button data-tab="bot" class="on">कंप्यूटर के साथ</button>
+    <button data-tab="local">साथ बैठकर</button>
+    <button data-tab="online">ऑनलाइन दोस्त</button>
+  </div>
+  <p class="lbl">मोड चुनें</p>
+  <div class="seg">
+    <label><input type="radio" name="mode" value="c" checked><span>क्लासिक<small>चारों गोटी घर</small></span></label>
+    <label><input type="radio" name="mode" value="r2"><span>रेस 2 मिनट<small>तेज़ मुकाबला</small></span></label>
+    <label><input type="radio" name="mode" value="r10"><span>रेस 10 मिनट<small>लंबी रेस</small></span></label>
+  </div>
+  <section data-pane="bot">
+    <p class="lbl">आपका नाम</p>
+    <input class="inp" id="bname" value="आप" maxlength="16">
+    <p class="lbl">कितने कंप्यूटर खिलाड़ी?</p>
+    <div class="seg">
+      <label><input type="radio" name="bots" value="1" checked><span>1 बॉट<small>आमने-सामने</small></span></label>
+      <label><input type="radio" name="bots" value="2"><span>2 बॉट</span></label>
+      <label><input type="radio" name="bots" value="3"><span>3 बॉट<small>पूरे 4</small></span></label>
+    </div>
+    <button class="big" id="bstart">खेल शुरू करें</button>
+  </section>
+  <section data-pane="local" hidden>
+    <p class="lbl">खिलाड़ी (एक ही फ़ोन/कंप्यूटर पर बारी-बारी)</p>
+    <div id="prows"></div>
+    <p class="err" id="serr"></p>
+    <button class="big" id="lstart">खेल शुरू करें</button>
+  </section>
+  <section data-pane="online" hidden><div id="onl"></div></section>
+  <p class="rule">रैंकिंग: जो पहले चारों गोटी घर पहुँचाए वो पहला। रेस में समय खत्म होने पर जिसकी ज़्यादा गोटियाँ घर में हैं वो आगे, बराबरी पर जिसने ज़्यादा कदम चले।</p>
+</div></div>
+
+<div class="modal hidden" id="lobby"><div class="card" id="lob"></div></div>
+
+<div class="modal hidden" id="result"><div class="card">
+  <h2 id="rtitle">नतीजा</h2>
+  <ol class="rlist" id="rlist"></ol>
+  <p class="note" id="rnote"></p>
+  <div class="row2"><button class="btn" id="rclose" style="flex:1">बोर्ड देखें</button><button class="big" id="ragain" style="flex:2;margin:0">फिर से खेलें</button></div>
+</div></div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let gen=0;
+const sleep=ms=>{const g=gen;return new Promise((res,rej)=>setTimeout(()=>g===gen?res():rej('stale'),ms))};
+
+/*ENGINE*/
+const TRACK=[];
+const seg=(c,r,dc,dr,n)=>{for(let i=0;i<n;i++)TRACK.push([c+dc*i,r+dr*i])};
+seg(1,6,1,0,5);seg(6,5,0,-1,6);seg(7,0,1,0,2);seg(8,1,0,1,5);seg(9,6,1,0,6);seg(14,7,0,1,2);
+seg(13,8,-1,0,5);seg(8,9,0,1,6);seg(7,14,-1,0,2);seg(6,13,0,-1,5);seg(5,8,-1,0,6);seg(0,7,0,-1,2);
+const P=[
+ {name:'लाल',c:'#e2332b',d:'#991a14',l:'#ffb3ad',start:0,yard:[0,0],home:[[1,7],[2,7],[3,7],[4,7],[5,7]],ctr:[6.6,7.5]},
+ {name:'हरा',c:'#1e9e4a',d:'#0d5f2a',l:'#a8e6bd',start:13,yard:[9,0],home:[[7,1],[7,2],[7,3],[7,4],[7,5]],ctr:[7.5,6.6]},
+ {name:'पीला',c:'#f4b400',d:'#a87800',l:'#ffe79a',start:26,yard:[9,9],home:[[13,7],[12,7],[11,7],[10,7],[9,7]],ctr:[8.4,7.5]},
+ {name:'नीला',c:'#1f6fe0',d:'#103d86',l:'#b0cdfa',start:39,yard:[0,9],home:[[7,13],[7,12],[7,11],[7,10],[7,9]],ctr:[7.5,8.4]}
+];
+const SAFE=new Set([0,8,13,21,26,34,39,47]);
+const STARS=[8,21,34,47];
+const ORD=['पहले','दूसरे','तीसरे','चौथे'];
+const clone=o=>JSON.parse(JSON.stringify(o));
+const absOf=(q,s)=>(P[q].start+s)%52;
+const act=S=>[0,1,2,3].filter(q=>S.players[q]&&S.players[q].on);
+const homeCnt=(S,q)=>S.pc[q].filter(v=>v===56).length;
+const prog=(S,q)=>S.pc[q].reduce((a,v)=>a+(v<0?0:v+1),0);
+function ranking(S){const f=S.finished.slice();return f.concat(act(S).filter(q=>!f.includes(q)).sort((a,b)=>homeCnt(S,b)-homeCnt(S,a)||prog(S,b)-prog(S,a)))}
+function canMove(S,p,k,d){const s=S.pc[p][k];if(s===56)return false;if(s<0)return d===6;return s+d<=56}
+function nextTurn(S){S.six=0;let t=S.turn;do{t=(t+1)%4}while(!S.players[t].on||S.finished.includes(t));S.turn=t;S.phase='roll'}
+function endCheck(S){if(act(S).filter(q=>!S.finished.includes(q)).length<=1){S.over=true;S.phase='over';S.reason='done'}}
+function newState(players,mode,t){const dur=mode==='r2'?120000:mode==='r10'?600000:0;
+ return{gid:Math.random().toString(36).slice(2,10),players,pc:[0,1,2,3].map(()=>[-1,-1,-1,-1]),turn:players.findIndex(x=>x.on),phase:'roll',dice:6,six:0,finished:[],mv:[],mode:dur?'race':'classic',dur,t0:t,endAt:t+dur,over:false,reason:'',seq:1,last:{t:'start'}}}
+function eRoll(S0,d){const S=clone(S0);S.dice=d;S.last={t:'roll',p:S.turn,d,note:''};
+ if(d===6){S.six++;if(S.six===3){S.last.note='लगातार तीन बार 6! बारी गई';S.mv=[];nextTurn(S);return S}}
+ S.mv=[0,1,2,3].filter(k=>canMove(S,S.turn,k,d));
+ if(!S.mv.length){S.last.note=d+' आया — कोई चाल नहीं';if(d!==6)nextTurn(S);else S.phase='roll';return S}
+ S.phase='move';return S}
+function eMove(S0,k){const S=clone(S0);const p=S.turn,d=S.dice,from=S.pc[p][k],to=from<0?0:from+d;S.pc[p][k]=to;S.mv=[];
+ const cut=[];let extra=d===6,note=d===6?'6 आया, फिर से बारी!':'';
+ if(to<=50&&!SAFE.has(absOf(p,to))){const a=absOf(p,to);for(const q of act(S)){if(q===p)continue;for(let j=0;j<4;j++){const v=S.pc[q][j];if(v>=0&&v<=50&&absOf(q,v)===a){cut.push([q,j]);S.pc[q][j]=-1}}}
+  if(cut.length){extra=true;note=S.players[p].name+' ने गोटी काटी! फिर से बारी'}}
+ if(to===56){extra=true;note='गोटी घर पहुँची! फिर से बारी';
+  if(S.pc[p].every(v=>v===56)){S.finished.push(p);note=S.players[p].name+' '+ORD[S.finished.length-1]+' स्थान पर!';extra=false;endCheck(S)}}
+ S.last={t:'move',p,k,from,to,d,cut,note};
+ if(S.over)return S;
+ if(extra){S.phase='roll';if(d!==6)S.six=0}else nextTurn(S);
+ return S}
+function eTimeUp(S0){const S=clone(S0);S.over=true;S.phase='over';S.reason='time';S.mv=[];S.last={t:'end',note:'समय खत्म!'};return S}
+function oppAt(S,a,p){return act(S).some(q=>q!==p&&S.pc[q].some(v=>v>=0&&v<=50&&absOf(q,v)===a))}
+function danger(S,a,p){return act(S).some(q=>q!==p&&S.pc[q].some(v=>{if(v<0||v>50)return false;const g=(a-absOf(q,v)+52)%52;return g>=1&&g<=6}))}
+function botPick(S){const p=S.turn,d=S.dice;let best=S.mv[0],bs=-1e9;
+ for(const k of S.mv){const s=S.pc[p][k],n=s<0?0:s+d;let sc=Math.random();
+  if(s<0)sc+=35;if(n===56)sc+=60;else if(n>50)sc+=25;
+  if(n<=50){const a=absOf(p,n);if(SAFE.has(a))sc+=12;else{if(s>=0&&oppAt(S,a,p))sc+=70;if(danger(S,a,p))sc-=22}}
+  if(s>=0&&s<=50&&!SAFE.has(absOf(p,s))&&danger(S,absOf(p,s),p))sc+=18;
+  sc+=n/10;if(sc>bs){bs=sc;best=k}}
+ return best}
+function norm(S){if(!S)return null;S.finished=S.finished?Object.values(S.finished):[];S.mv=S.mv?Object.values(S.mv):[];
+ S.players=[0,1,2,3].map(i=>(S.players&&S.players[i])||{on:false});
+ S.pc=[0,1,2,3].map(i=>[0,1,2,3].map(j=>(S.pc&&S.pc[i]&&S.pc[i][j]!=null)?S.pc[i][j]:-1));
+ S.last=S.last||{t:'start'};S.last.cut=S.last.cut?Object.values(S.last.cut):[];S.last.note=S.last.note||'';S.reason=S.reason||'';return S}
+/*ENDENGINE*/
+
+/* ---------- Sound (Web Audio) ---------- */
+let AC=null,muted=false,NB=null;
+function A(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,o={}){const a=A();if(!a||muted)return;const{type='sine',v=.18,at=0,to=null}=o;const t=a.currentTime+at,os=a.createOscillator(),g=a.createGain();os.type=type;os.frequency.setValueAtTime(f,t);if(to)os.frequency.exponentialRampToValueAtTime(to,t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);os.connect(g).connect(a.destination);os.start(t);os.stop(t+d+.03)}
+function noise(d,o={}){const a=A();if(!a||muted)return;const{v=.2,at=0,f=2000,q=1}=o;if(!NB){NB=a.createBuffer(1,a.sampleRate*.5,a.sampleRate);const ch=NB.getChannelData(0);for(let i=0;i<ch.length;i++)ch[i]=Math.random()*2-1}const t=a.currentTime+at,s=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();s.buffer=NB;bp.type='bandpass';bp.frequency.value=f;bp.Q.value=q;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(bp).connect(g).connect(a.destination);s.start(t);s.stop(t+d+.03)}
+const sfx={
+ step(){tone(760,.07,{type:'triangle',v:.24,to:430});noise(.035,{v:.3,f:3400,q:2.5})},
+ dice(){for(let i=0;i<10;i++){const at=i*.05+Math.random()*.02;noise(.04,{v:.4,at,f:1600+Math.random()*2200,q:3});tone(260+Math.random()*320,.035,{type:'square',v:.03,at})}},
+ six(){tone(880,.12,{v:.14});tone(1320,.2,{v:.12,at:.08})},
+ out(){tone(330,.16,{type:'triangle',v:.22,to:900});noise(.04,{v:.25,f:2500})},
+ cap(){tone(720,.5,{type:'sawtooth',v:.12,to:100});noise(.25,{v:.25,f:500,q:.8})},
+ home(){[523,659,784,1047].forEach((f,i)=>tone(f,.2,{type:'triangle',v:.16,at:i*.08}))},
+ turn(){tone(620,.06,{v:.05})},
+ bad(){tone(220,.35,{type:'square',v:.07,to:130})},
+ invite(){[784,988,1175].forEach((f,i)=>tone(f,.15,{v:.14,at:i*.1}))},
+ win(){[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.28,{type:'triangle',v:.16,at:i*.13}))}
+};
+
+/* ---------- Controller state ---------- */
+let S=null,D=null,AN={},DR={},U=1,busy=false,animating=false,lastChange=Date.now(),animQ=Promise.resolve();
+let FB=null,offset=0,net=null,onlState='idle',onlMsg='',liveList=[];
+const now=()=>Date.now()+offset;
+const cv=$('#cv'),bcv=document.createElement('canvas'),diceEl=$('#dice');
+const isMine=t=>{const pl=S&&S.players[t];if(!pl||pl.bot)return false;return net?pl.uid===net.uid:true};
+const amHost=()=>net?net.host===net.uid:true;
+const avatar=src=>src?`<img class="av" src="${esc(src)}" alt="" referrerpolicy="no-referrer">`:'';
+function pt(p,k){const pl=P[p],s=D[p][k];
+ if(s<0){const[ox,oy]=pl.yard;return[ox+2+(k%2)*2,oy+2+(k>>1)*2]}
+ if(s<=50){const[c,r]=TRACK[(pl.start+s)%52];return[c+.5,r+.5]}
+ if(s<=55){const[c,r]=pl.home[s-51];return[c+.5,r+.5]}
+ const o=[[-.2,-.2],[.2,-.2],[-.2,.2],[.2,.2]][k];return[pl.ctr[0]+o[0],pl.ctr[1]+o[1]]}
+
+/* ---------- Drawing ---------- */
+function star(c,x,y,r,col){c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;c.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}c.closePath();c.fillStyle=col;c.fill()}
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function drawBoard(){const c=bcv.getContext('2d');c.setTransform(U,0,0,U,0,0);c.fillStyle='#fff';c.fillRect(0,0,15,15);c.lineWidth=.035;
+ TRACK.forEach(([x,y],i)=>{const own=P.find(pl=>pl.start===i);c.fillStyle=own?own.c:'#fff';c.fillRect(x,y,1,1);c.strokeStyle='#b7c1bd';c.strokeRect(x,y,1,1);
+  if(STARS.includes(i))star(c,x+.5,y+.5,.34,'#9aa7a2');if(own)star(c,x+.5,y+.5,.34,'rgba(255,255,255,.92)')});
+ P.forEach(pl=>{pl.home.forEach(([x,y])=>{c.fillStyle=pl.c;c.fillRect(x,y,1,1);c.strokeStyle='rgba(0,0,0,.18)';c.strokeRect(x,y,1,1)});
+  const[ox,oy]=pl.yard;const g=c.createLinearGradient(ox,oy,ox+6,oy+6);g.addColorStop(0,pl.c);g.addColorStop(1,pl.d);c.fillStyle=g;c.fillRect(ox,oy,6,6);
+  rrect(c,ox+.7,oy+.7,4.6,4.6,.5);c.fillStyle='#fff';c.fill();
+  for(let k=0;k<4;k++){const sx=ox+2+(k%2)*2,sy=oy+2+(k>>1)*2;c.beginPath();c.arc(sx,sy,.62,0,7);c.fillStyle=pl.l;c.fill();c.lineWidth=.08;c.strokeStyle=pl.c;c.stroke()}});
+ const tri=(a,b,col)=>{c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.lineTo(7.5,7.5);c.closePath();c.fillStyle=col;c.fill()};
+ tri([6,6],[6,9],P[0].c);tri([6,6],[9,6],P[1].c);tri([9,6],[9,9],P[2].c);tri([6,9],[9,9],P[3].c);
+ c.strokeStyle='rgba(0,0,0,.2)';c.lineWidth=.04;c.beginPath();c.moveTo(6,6);c.lineTo(9,9);c.moveTo(9,6);c.lineTo(6,9);c.stroke();c.strokeRect(6,6,3,3);
+ c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=.06;[[0,0],[9,0],[9,9],[0,9]].forEach(([x,y])=>c.strokeRect(x,y,6,6))}
+function drawPiece(c,x,y,r,pl,hl,t,lift){
+ c.fillStyle='rgba(0,0,0,.3)';c.beginPath();c.ellipse(x,y+r*.72+lift,r*Math.max(.5,.9-lift*.4),r*.36,0,0,7);c.fill();
+ if(hl){const pr=r*1.3+Math.sin(t/140)*.06;c.beginPath();c.arc(x,y,pr,0,7);c.strokeStyle='#fff';c.lineWidth=.11;c.stroke();c.strokeStyle=pl.d;c.lineWidth=.045;c.stroke()}
+ const g=c.createRadialGradient(x-r*.35,y-r*.4,r*.08,x,y,r);g.addColorStop(0,pl.l);g.addColorStop(.45,pl.c);g.addColorStop(1,pl.d);
+ c.beginPath();c.arc(x,y,r,0,7);c.fillStyle=g;c.fill();c.lineWidth=.04;c.strokeStyle=pl.d;c.stroke();
+ c.beginPath();c.arc(x,y,r*.55,0,7);c.lineWidth=r*.17;c.strokeStyle='rgba(255,255,255,.92)';c.stroke();
+ c.beginPath();c.arc(x-r*.32,y-r*.36,r*.2,0,7);c.fillStyle='rgba(255,255,255,.6)';c.fill()}
+function draw(t){const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);c.drawImage(bcv,0,0);c.setTransform(U,0,0,U,0,0);
+ if(!S||!D)return;
+ if(!S.over){const[ox,oy]=P[S.turn].yard;c.strokeStyle=`rgba(255,255,255,${.45+.4*Math.sin(t/220)})`;c.lineWidth=.18;c.strokeRect(ox+.14,oy+.14,5.72,5.72)}
+ const items=[];
+ for(const p of act(S))for(let k=0;k<4;k++){const an=AN[p*4+k];const[tx,ty]=pt(p,k);let x=tx,y=ty,lift=0,moving=false;
+  if(an){const q=Math.min(1,(t-an.t0)/an.dur);x=an.fx+(tx-an.fx)*q;y=an.fy+(ty-an.fy)*q;lift=Math.sin(q*Math.PI)*an.h;moving=q<1}
+  items.push({p,k,x,y,lift,moving,r:D[p][k]===56?.24:.36})}
+ const groups={};items.forEach(it=>{if(it.moving)return;const key=Math.round(it.x*10)+','+Math.round(it.y*10);(groups[key]=groups[key]||[]).push(it)});
+ Object.values(groups).forEach(g=>{const n=g.length;if(n<2)return;g.forEach((it,i)=>{const a=i/n*Math.PI*2-Math.PI/4,rr=n===2?.18:.21;it.x+=Math.cos(a)*rr;it.y+=Math.sin(a)*rr;it.r*=.68})});
+ items.sort((a,b)=>(a.moving-b.moving)||((a.p===S.turn)-(b.p===S.turn))||a.y-b.y);
+ const canPick=S.phase==='move'&&isMine(S.turn)&&!animating&&!busy;
+ items.forEach(it=>{drawPiece(c,it.x,it.y-it.lift,it.r,P[it.p],canPick&&it.p===S.turn&&S.mv.includes(it.k),t,it.lift);DR[it.p*4+it.k]=[it.x,it.y]})}
+function loop(t){draw(t);requestAnimationFrame(loop)}
+function resize(){const s=$('#board').clientWidth;const dpr=Math.min(2,window.devicePixelRatio||1);cv.width=bcv.width=Math.max(1,Math.round(s*dpr));cv.height=bcv.height=cv.width;U=cv.width/15;drawBoard()}
+new ResizeObserver(resize).observe($('#board'));
+
+/* ---------- Panel ---------- */
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function showDice(v){diceEl.innerHTML=Array.from({length:9},(_,i)=>`<i class="${PIPS[v].includes(i)?'on':''}"></i>`).join('')}
+const msg=t=>{$('#msg').textContent=t};
+const fmt=ms=>{const s=Math.ceil(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+function ui(){if(!S)return;const p=S.turn,pl=P[p],cur=S.players[p];
+ $('#turn').innerHTML=S.over?'खेल खत्म':`<span class="dot" style="background:${pl.c}"></span>${esc(cur.name)} की बारी`;
+ diceEl.style.setProperty('--pc',S.over?'#888':pl.c);
+ diceEl.classList.toggle('ready',S.phase==='roll'&&isMine(p)&&!S.over&&!animating);
+ $('#tlabel').textContent=S.mode==='race'?`रेस (${S.dur/60000} मिनट) — समय बचा`:'क्लासिक — खेल का समय';
+ const rt=$('#roomtag');rt.hidden=!net;if(net)rt.textContent='रूम '+net.code;
+ $('#plist').innerHTML=ranking(S).map((q,i)=>{const pr=Math.round(prog(S,q)/228*100),x=S.players[q];
+  return `<li class="${q===p&&!S.over?'cur':''}"><b>${i+1}</b><span class="who"><span class="dot" style="background:${P[q].c}"></span>${avatar(x.photo)}</span><div><div class="nm">${esc(x.name)}${x.bot?' <small>कंप्यूटर</small>':''}${net&&x.uid===net.uid?' <small>(आप)</small>':''}${S.finished.includes(q)?' <small class="fin">पूरा</small>':''}</div><div class="bar"><i style="width:${pr}%;background:${P[q].c}"></i></div></div><span class="hc">घर ${homeCnt(S,q)}/4</span></li>`}).join('')}
+
+/* ---------- Turn flow (same for offline and online) ---------- */
+function commit(ns){const base=S.seq;ns.seq=base+1;
+ if(net){busy=true;net.ref.child('state').transaction(cur=>{if(cur&&cur.seq!==base)return;return clone(ns)},(err,ok)=>{if(err||!ok)busy=false})}
+ else receive(clone(ns))}
+function receive(ns){if(!ns)return;if(S&&D&&ns.gid===S.gid&&ns.seq<=S.seq)return;
+ const prev=S;S=ns;lastChange=Date.now();busy=false;const g=gen;
+ animQ=animQ.then(async()=>{animating=true;try{await play(prev,ns)}finally{animating=false}}).then(()=>{if(g===gen&&S===ns)after()}).catch(()=>{animating=false})}
+async function hop(p,k,np,dur=170,h=.38){const key=p*4+k;const[fx,fy]=DR[key]||pt(p,k);D[p][k]=np;AN[key]={fx,fy,t0:performance.now(),dur,h};await sleep(dur+12);delete AN[key]}
+async function play(prev,ns){
+ if(!D||!prev||prev.gid!==ns.gid){D=clone(ns.pc);AN={};showDice(ns.dice||6);ui();if(ns.over)showEnd();return}
+ const L=ns.last;ui();
+ if(L.t==='roll'){sfx.dice();diceEl.classList.add('roll');for(let i=0;i<7;i++){showDice(1+Math.floor(Math.random()*6));await sleep(65)}diceEl.classList.remove('roll');showDice(L.d);
+  if(L.note){if(L.note.includes('तीन'))sfx.bad();msg(L.note);await sleep(950)}else if(L.d===6)sfx.six()}
+ else if(L.t==='move'){const p=L.p,k=L.k;
+  if(L.from<0){sfx.out();await hop(p,k,0,260,.6)}else for(let s=L.from+1;s<=L.to;s++){sfx.step();await hop(p,k,s)}
+  if(L.cut.length){for(const[q,j]of L.cut){const key=q*4+j,[fx,fy]=DR[key]||pt(q,j);D[q][j]=-1;AN[key]={fx,fy,t0:performance.now(),dur:500,h:1.2}}sfx.cap();await sleep(520);L.cut.forEach(([q,j])=>delete AN[q*4+j])}
+  if(L.to===56)sfx.home();
+  if(L.note)msg(L.note);
+  if(ns.finished.length>prev.finished.length)await sleep(1000)}
+ D=clone(ns.pc);ui();
+ if(ns.over){showEnd();return}
+ if(prev.turn!==ns.turn)sfx.turn()}
+function later(ms,fn){const g=gen,seq=S.seq,gid=S.gid;setTimeout(()=>{if(g===gen&&S&&S.seq===seq&&S.gid===gid&&!busy)fn()},ms)}
+function after(){ui();if(!S||S.over)return;const pl=S.players[S.turn],mine=isMine(S.turn),botHere=pl.bot&&amHost();const note=S.last.note?S.last.note+' · ':'';
+ if(S.phase==='roll'){
+  msg(note+(pl.bot?pl.name+' सोच रहा है…':mine?pl.name+', पासा फेंकें':pl.name+' की बारी — इंतज़ार करें'));
+  if(botHere)later(750,doRoll)}
+ else if(S.phase==='move'){const same=new Set(S.mv.map(k=>S.pc[S.turn][k])).size===1;
+  if(botHere)later(600,()=>doMove(same?S.mv[0]:botPick(S)));
+  else if(mine){if(same)later(350,()=>doMove(S.mv[0]));else msg(S.dice+' आया — चमकती गोटी पर क्लिक करें')}
+  else msg(pl.name+' चाल चल रहा है…')}}
+function doRoll(){if(!S||busy||S.over||S.phase!=='roll'||animating)return;busy=true;commit(eRoll(S,1+Math.floor(Math.random()*6)))}
+function doMove(k){if(!S||busy||S.over||S.phase!=='move'||animating||!S.mv.includes(k))return;busy=true;commit(eMove(S,k))}
+function showEnd(){sfx.win();ui();msg(S.reason==='time'?'समय खत्म!':'खेल खत्म!');
+ $('#rtitle').textContent=S.reason==='time'?'समय खत्म! रेस का नतीजा':'खेल खत्म! नतीजा';
+ $('#rlist').innerHTML=ranking(S).map((q,i)=>{const x=S.players[q];return `<li><span class="medal m${i}">${['पहला','दूसरा','तीसरा','चौथा'][i]}</span><span class="who"><span class="dot" style="background:${P[q].c}"></span>${avatar(x.photo)}</span><span class="nm">${esc(x.name)}</span><span class="st">घर ${homeCnt(S,q)}/4 · ${prog(S,q)} कदम</span></li>`}).join('');
+ $('#rnote').textContent=net&&!amHost()?'होस्ट "फिर से खेलें" दबाएगा तो सब वापस रूम में आ जाएँगे।':'';
+ $('#ragain').textContent=net?(amHost()?'फिर से खेलें (इसी रूम में)':'नया गेम चुनें'):'फिर से खेलें';
+ setTimeout(()=>{if(S&&S.over)$('#result').classList.remove('hidden')},700)}
+
+/* ---------- Offline games ---------- */
+const modeVal=()=>document.querySelector('input[name=mode]:checked').value;
+const modeName=m=>m==='r2'?'रेस 2 मिनट':m==='r10'?'रेस 10 मिनट':'क्लासिक';
+function resetBoard(){gen++;animQ=Promise.resolve();S=null;D=null;AN={};busy=false;animating=false}
+function startLocal(players){A();leaveNet();resetBoard();hideAll();receive(newState(players,modeVal(),now()))}
+$('#prows').innerHTML=P.map((pl,i)=>`<div class="prow"><span class="sw" style="background:${pl.c}"></span><input id="n${i}" value="${pl.name} खिलाड़ी" maxlength="16" aria-label="${pl.name} का नाम"><select id="t${i}" aria-label="${pl.name} कौन खेलेगा"><option value="human">इंसान</option><option value="bot">कंप्यूटर</option><option value="off">बंद</option></select></div>`).join('');
+$('#bstart').onclick=()=>{const n=+document.querySelector('input[name=bots]:checked').value;const seats=n===1?[0,2]:n===2?[0,1,2]:[0,1,2,3];const me=$('#bname').value.trim()||'आप';
+ startLocal(P.map((pl,i)=>!seats.includes(i)?{on:false}:i===0?{on:true,bot:false,name:me}:{on:true,bot:true,name:'कंप्यूटर '+pl.name}))};
+$('#lstart').onclick=()=>{const players=P.map((pl,i)=>{const t=$('#t'+i).value;return{on:t!=='off',bot:t==='bot',name:$('#n'+i).value.trim()||pl.name}});
+ if(players.filter(x=>x.on).length<2){$('#serr').textContent='कम से कम 2 खिलाड़ी चुनें';return}$('#serr').textContent='';startLocal(players)};
+
+/* ---------- Screens ---------- */
+function hideAll(){['#home','#lobby','#result'].forEach(s=>$(s).classList.add('hidden'))}
+function openHome(tab){hideAll();$('#home').classList.remove('hidden');if(tab)setTab(tab)}
+function setTab(tab){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));document.querySelectorAll('[data-pane]').forEach(s=>s.hidden=s.dataset.pane!==tab);if(tab==='online')startOnline()}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+
+/* ---------- Online: Firebase ---------- */
+const SDK='https://cdn.jsdelivr.net/npm/firebase@10.12.2/';
+const CH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+async function initFB(){if(FB)return FB;
+ let cfg=window.FIREBASE_CONFIG||null;
+ if(!cfg){try{const r=await fetch('/__/firebase/init.json');if(r.ok)cfg=await r.json()}catch(e){}}
+ if(!cfg)throw new Error('nocfg');
+ for(const f of['firebase-app-compat.js','firebase-auth-compat.js','firebase-database-compat.js'])await loadScript(SDK+f);
+ firebase.initializeApp(cfg);
+ FB={auth:firebase.auth(),db:firebase.database()};
+ FB.db.ref('.info/serverTimeOffset').on('value',s=>{offset=s.val()||0});
+ FB.auth.onAuthStateChanged(u=>{if(u)goLive(u);renderOnline()});
+ FB.auth.getRedirectResult().catch(onlErr);
+ return FB}
+async function startOnline(){if(onlState==='ready'||onlState==='loading')return renderOnline();onlState='loading';renderOnline();
+ try{await initFB();onlState='ready'}catch(e){onlState='nocfg'}renderOnline();
+ const rc=new URLSearchParams(location.search).get('room');if(rc&&onlState==='ready'){$('#jcode')&&($('#jcode').value=rc);if(FB.auth.currentUser&&!net)joinRoom(rc)}}
+function onlErr(e){onlMsg=typeof e==='string'?e:(e&&e.code==='auth/popup-closed-by-user')?'':('दिक्कत: '+((e&&e.message)||e));renderOnline()}
+const meInfo=()=>{const u=FB.auth.currentUser;return{uid:u.uid,name:(u.displayName||'खिलाड़ी').slice(0,16),photo:u.photoURL||null}};
+function renderOnline(){const el=$('#onl');
+ if(onlState==='loading'){el.innerHTML='<p class="note">ऑनलाइन सिस्टम लोड हो रहा है…</p>';return}
+ if(onlState==='nocfg'){el.innerHTML='<p class="note">ऑनलाइन खेल आपकी अपनी वेबसाइट (Firebase) पर चलेगा। यहाँ अभी आप कंप्यूटर के साथ या साथ बैठकर खेल सकते हैं।</p>';return}
+ if(!FB)return;const u=FB.auth.currentUser;
+ if(!u){el.innerHTML=`<div class="login"><button class="fb" id="lfb">Facebook से लॉगिन</button><button class="gg" id="lgg">Google से लॉगिन</button><div class="or">या मेहमान बनकर</div><div class="row2"><input class="inp" id="gname" placeholder="अपना नाम लिखें" maxlength="16"><button class="btn" id="lguest">खेलें</button></div></div><p class="err">${esc(onlMsg)}</p>`;
+  $('#lfb').onclick=()=>signIn(new firebase.auth.FacebookAuthProvider());
+  $('#lgg').onclick=()=>signIn(new firebase.auth.GoogleAuthProvider());
+  $('#lguest').onclick=async()=>{const n=$('#gname').value.trim();if(!n)return onlErr('अपना नाम लिखें');try{const c=await FB.auth.signInAnonymously();await c.user.updateProfile({displayName:n});goLive(c.user);setLive();renderOnline()}catch(e){onlErr(e)}};return}
+ const me=meInfo();const others=liveList.filter(x=>x.uid!==me.uid);
+ el.innerHTML=`<div class="me">${avatar(me.photo)}<b>${esc(me.name)}</b><button class="btn sm" id="lout">लॉगआउट</button></div>
+ <label class="chk"><input type="checkbox" id="fillb"> खाली जगह पर कंप्यूटर खेलेगा</label>
+ <button class="big" id="mk" style="margin-top:4px">नया रूम बनाएँ और इनवाइट लिंक पाएँ</button>
+ <div class="or">या दोस्त का रूम कोड डालें</div>
+ <div class="row2"><input class="inp code" id="jcode" placeholder="जैसे AB12CD" maxlength="6" autocapitalize="characters"><button class="btn" id="jbtn">जुड़ें</button></div>
+ <p class="lbl" style="margin-top:16px"><span class="gdot" style="display:inline-block;margin-right:6px"></span>अभी ऑनलाइन (${others.length})</p>
+ ${others.length?`<ul class="live">${others.map(x=>`<li>${avatar(x.photo)}<span class="nm">${esc(x.name)}</span><span class="st">${x.state==='playing'?'खेल रहा है':'फ्री है'}</span><button class="btn sm" data-inv="${esc(x.uid)}" ${x.state==='playing'?'disabled':''}>खेलने बुलाएँ</button></li>`).join('')}</ul>`:'<p class="note">अभी कोई और ऑनलाइन नहीं है। इनवाइट लिंक भेजकर दोस्त को बुलाएँ।</p>'}
+ <p class="err">${esc(onlMsg)}</p>`;
+ $('#lout').onclick=async()=>{await leaveLive();await FB.auth.signOut();renderOnline()};
+ $('#mk').onclick=()=>createRoom().catch(onlErr);
+ $('#jbtn').onclick=()=>joinRoom($('#jcode').value).catch(onlErr);
+ el.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>sendInvite(b.dataset.inv).catch(onlErr))}
+async function signIn(prov){onlMsg='';try{await FB.auth.signInWithPopup(prov)}catch(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')return FB.auth.signInWithRedirect(prov);onlErr(e)}}
+
+/* presence: who is live right now */
+let liveRef=null,liveOn=false;
+function goLive(u){if(liveOn)return;liveOn=true;const ref=FB.db.ref('online/'+u.uid);liveRef=ref;
+ FB.db.ref('.info/connected').on('value',s=>{if(s.val()!==true||!FB.auth.currentUser)return;ref.onDisconnect().remove();setLive()});
+ FB.db.ref('online').on('value',s=>{const v=s.val()||{};liveList=Object.keys(v).map(k=>({uid:k,...v[k]})).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,40);renderOnline()});
+ FB.db.ref('invites/'+u.uid).on('child_added',s=>showInvite(s.key,s.val()))}
+function setLive(){if(!liveRef||!FB.auth.currentUser)return;const m=meInfo();liveRef.set({name:m.name,photo:m.photo,state:net&&net.inGame?'playing':'free',ts:firebase.database.ServerValue.TIMESTAMP})}
+async function leaveLive(){if(!liveOn)return;const uid=FB.auth.currentUser.uid;FB.db.ref('online').off();FB.db.ref('.info/connected').off();FB.db.ref('invites/'+uid).off();await liveRef.remove();liveOn=false;liveRef=null;liveList=[]}
+
+/* invites */
+async function sendInvite(toUid){if(!net)await createRoom();const m=meInfo();const ref=FB.db.ref('invites/'+toUid+'/'+m.uid);
+ await ref.set({name:m.name,photo:m.photo,code:net.code,ts:firebase.database.ServerValue.TIMESTAMP});ref.onDisconnect().remove();
+ const who=liveList.find(x=>x.uid===toUid);toast(`<b>${esc(who?who.name:'दोस्त')}</b> को खेलने का न्योता भेज दिया। वो स्वीकार करेगा तो रूम में आ जाएगा।`,4000)}
+function showInvite(from,v){if(!v||!v.code)return;if(Date.now()+offset-(v.ts||0)>10*60000){FB.db.ref('invites/'+FB.auth.currentUser.uid+'/'+from).remove();return}
+ sfx.invite();const t=$('#toast');t.hidden=false;t.innerHTML=`<div class="row2" style="justify-content:flex-start">${avatar(v.photo)}<span><b>${esc(v.name)}</b> आपको लूडो खेलने बुला रहा है (रूम ${esc(v.code)})</span></div><div class="row2"><button class="btn" id="idec">मना करें</button><button class="big" id="iacc" style="margin:0;min-height:46px;font-size:17px">खेलें</button></div>`;
+ const ref=FB.db.ref('invites/'+FB.auth.currentUser.uid+'/'+from);
+ $('#idec').onclick=()=>{ref.remove();t.hidden=true};
+ $('#iacc').onclick=()=>{ref.remove();t.hidden=true;joinRoom(v.code).catch(onlErr)}}
+let toastTimer=0;function toast(h,ms){const t=$('#toast');t.hidden=false;t.innerHTML=`<div>${h}</div>`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},ms)}
+
+/* rooms */
+async function createRoom(){const m=meInfo();let code='';
+ for(let i=0;i<6;i++){code=Array.from({length:6},()=>CH[Math.floor(Math.random()*CH.length)]).join('');if(!(await FB.db.ref('rooms/'+code).get()).exists())break}
+ await FB.db.ref('rooms/'+code).set({host:m.uid,mode:modeVal(),fill:!!($('#fillb')&&$('#fillb').checked),status:'lobby',created:firebase.database.ServerValue.TIMESTAMP,seats:{s0:m}});
+ enterRoom(code)}
+const seatList=r=>['s0','s1','s2','s3'].map(k=>(r.seats&&r.seats[k])||null);
+async function joinRoom(code){onlMsg='';code=String(code||'').trim().toUpperCase();if(!/^[A-Z0-9]{6}$/.test(code))return onlErr('सही 6 अक्षर का रूम कोड डालें');
+ if(!FB.auth.currentUser)return onlErr('पहले लॉगिन करें');
+ const ref=FB.db.ref('rooms/'+code);const snap=await ref.get();if(!snap.exists())return onlErr('यह रूम नहीं मिला');
+ const r=snap.val(),m=meInfo();
+ if(r.status!=='lobby'){const inGame=r.state&&r.state.players&&Object.values(r.state.players).some(p=>p&&p.uid===m.uid);if(inGame)return enterRoom(code);return onlErr('इस रूम में खेल शुरू हो चुका है')}
+ let ok=false;
+ await ref.child('seats').transaction(seats=>{seats=seats||{};const keys=['s0','s1','s2','s3'];if(keys.some(k=>seats[k]&&seats[k].uid===m.uid)){ok=true;return}const k=keys.find(k=>!seats[k]);if(!k){ok=false;return}ok=true;seats[k]=m;return seats});
+ if(!ok)return onlErr('रूम भरा हुआ है (4 खिलाड़ी)');
+ enterRoom(code)}
+function enterRoom(code){A();if(net&&net.code===code)return;leaveNet();resetBoard();
+ net={code,uid:FB.auth.currentUser.uid,ref:FB.db.ref('rooms/'+code),host:null,room:null,inGame:false,dc:null};
+ net.ref.on('value',s=>onRoom(s.val()));
+ try{history.replaceState(null,'','?room='+code)}catch(e){}}
+function onRoom(r){if(!net)return;
+ if(!r){leaveNet();openHome('online');onlErr('रूम बंद हो गया');return}
+ net.host=r.host;net.room=r;
+ if(r.status==='lobby'){if(net.inGame||S){net.inGame=false;resetBoard();setLive()}
+  const seats=seatList(r);const mk=['s0','s1','s2','s3'].find((k,i)=>seats[i]&&seats[i].uid===net.uid);
+  if(!mk){leaveNet();openHome('online');onlErr('आप इस रूम से बाहर हो गए');return}
+  if(net.dc!==mk){net.dc=mk;net.ref.child('seats/'+mk).onDisconnect().remove()}
+  renderLobby(r);hideAll();$('#lobby').classList.remove('hidden');return}
+ if(!net.inGame){net.inGame=true;setLive()}
+ $('#lobby').classList.add('hidden');$('#home').classList.add('hidden');
+ if(r.state)receive(norm(r.state))}
+function renderLobby(r){const seats=seatList(r),humans=seats.filter(Boolean).length,host=r.host===net.uid;
+ const link=location.origin+location.pathname+'?room='+net.code;const total=r.fill?4:humans;
+ const others=liveList.filter(x=>x.uid!==net.uid&&x.state!=='playing'&&!seats.some(s=>s&&s.uid===x.uid));
+ $('#lob').innerHTML=`<h2>रूम ${net.code}</h2><p class="note">मोड: ${modeName(r.mode)} · दोस्त को यह इनवाइट लिंक भेजें — लिंक खोलते ही वो इस रूम में आ जाएगा</p>
+ <div class="share"><input class="inp" readonly value="${esc(link)}" id="slink" aria-label="इनवाइट लिंक"><button class="btn" id="cpy">कॉपी</button><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('मेरे साथ लूडो खेलो! रूम कोड: '+net.code+'\n'+link)}">WhatsApp</a></div>
+ <ul class="seats">${seats.map((s,i)=>`<li><span class="sw" style="background:${P[i].c}"></span>${s?avatar(s.photo)+`<b>${esc(s.name)}</b>${s.uid===r.host?' <small>होस्ट</small>':''}${s.uid===net.uid?' <small>(आप)</small>':''}`:`<span class="mute">${r.fill?'कंप्यूटर खेलेगा':'खाली — दोस्त का इंतज़ार'}</span>`}</li>`).join('')}</ul>
+ ${host?`<label class="chk"><input type="checkbox" id="lfill" ${r.fill?'checked':''}> खाली जगह पर कंप्यूटर खेलेगा</label>`:''}
+ ${others.length&&humans<4?`<p class="lbl">अभी ऑनलाइन — सीधे बुलाएँ</p><ul class="live">${others.slice(0,6).map(x=>`<li>${avatar(x.photo)}<span class="nm">${esc(x.name)}</span><button class="btn sm" data-inv="${esc(x.uid)}">बुलाएँ</button></li>`).join('')}</ul>`:''}
+ ${host?`<button class="big" id="lgo" ${total>=2?'':'disabled'}>खेल शुरू करें (${total} खिलाड़ी)</button>`:'<p class="note">होस्ट के खेल शुरू करने का इंतज़ार…</p>'}
+ <button class="btn" id="lleave" style="width:100%;margin-top:8px">रूम छोड़ें</button>`;
+ $('#cpy').onclick=async()=>{try{await navigator.clipboard.writeText(link);$('#cpy').textContent='कॉपी हो गया'}catch(e){$('#slink').select()}};
+ if(host){$('#lfill').onchange=e=>net.ref.update({fill:e.target.checked});$('#lgo').onclick=hostStart}
+ $('#lleave').onclick=leaveRoom;
+ $('#lob').querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>{b.disabled=true;b.textContent='भेजा';sendInvite(b.dataset.inv).catch(onlErr)})}
+function hostStart(){const r=net.room;const seats=seatList(r);
+ const players=seats.map((s,i)=>s?{on:true,bot:false,name:s.name,photo:s.photo||null,uid:s.uid}:r.fill?{on:true,bot:true,name:'कंप्यूटर '+P[i].name}:{on:false});
+ if(players.filter(x=>x.on).length<2)return;
+ net.ref.update({status:'playing',state:clone(newState(players,r.mode,now()))})}
+function leaveRoom(){if(!net)return;const host=net.host===net.uid,ref=net.ref,dc=net.dc;leaveNet();if(host)ref.remove();else if(dc)ref.child('seats/'+dc).remove();openHome('online')}
+function leaveNet(){if(!net)return;net.ref.off();if(net.dc)net.ref.child('seats/'+net.dc).onDisconnect().cancel();net=null;setLive();
+ try{history.replaceState(null,'',location.pathname)}catch(e){}$('#roomtag').hidden=true}
+window.addEventListener('focus',()=>{if(liveOn)renderOnline()});
+
+/* ---------- Controls ---------- */
+$('#newg').onclick=()=>{A();openHome(net?'online':null)};
+$('#ragain').onclick=()=>{if(net){if(amHost()){$('#result').classList.add('hidden');net.ref.update({status:'lobby',state:null})}else{leaveRoom()}return}openHome()};
+$('#rclose').onclick=()=>$('#result').classList.add('hidden');
+$('#snd').onclick=()=>{muted=!muted;$('#snd').textContent='आवाज़: '+(muted?'बंद':'चालू');if(!muted){A();sfx.turn()}};
+diceEl.onclick=()=>{A();if(S&&isMine(S.turn))doRoll()};
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&S&&!S.over&&$('#home').classList.contains('hidden')&&!/INPUT|SELECT|BUTTON/.test(e.target.tagName)){e.preventDefault();if(isMine(S.turn))doRoll()}});
+cv.addEventListener('pointerdown',e=>{if(!S||S.phase!=='move'||!isMine(S.turn)||animating||busy)return;A();const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*15,y=(e.clientY-r.top)/r.height*15;let best=null,bd=.85;
+ S.mv.forEach(k=>{const dp=DR[S.turn*4+k];if(!dp)return;const dd=Math.hypot(dp[0]-x,dp[1]-y);if(dd<bd){bd=dd;best=k}});if(best!==null)doMove(best)});
+setInterval(()=>{if(!S)return;const el=$('#timer'),t=now();
+ if(S.mode==='race'){const rem=Math.max(0,S.endAt-t);if(!S.over)el.textContent=fmt(rem);el.classList.toggle('low',rem<30000&&!S.over);if(rem<=0&&!S.over&&!busy&&amHost()){busy=true;commit(eTimeUp(S))}}
+ else if(!S.over)el.textContent=fmt(t-S.t0);
+ const tt=$('#tt');
+ if(net&&!S.over){const pl=S.players[S.turn];const left=Math.max(0,30-Math.floor((Date.now()-lastChange)/1000));tt.textContent=pl.bot?'':'बारी का समय: '+left+' सेकंड';
+  if(left===0&&amHost()&&!animating&&!busy&&!pl.bot){if(S.phase==='roll')doRoll();else if(S.phase==='move')doMove(botPick(S))}}
+ else tt.textContent=''},250);
+showDice(6);resize();requestAnimationFrame(loop);
+if(new URLSearchParams(location.search).get('room'))setTab('online');
+}
+</script>
+</body>
+</html>
